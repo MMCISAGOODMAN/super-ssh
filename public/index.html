@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Super SSH</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="header">
+  <h1>⚡ Super SSH</h1>
+  <div class="status-dot" id="statusDot"></div>
+  <span id="statusText" style="font-size:12px;color:var(--text-dim)">未连接</span>
+  <div class="header-right">
+    <button class="btn btn-ghost btn-sm" onclick="toggleBgModal()" title="设置背景图">🎨 背景</button>
+  </div>
+</div>
+
+<!-- Background settings modal -->
+<div id="bgModal" class="modal-overlay hidden" onclick="if(event.target===this)toggleBgModal()">
+  <div class="modal">
+    <div class="modal-header"><span>🎨 背景设置</span><button class="btn btn-ghost btn-sm" onclick="toggleBgModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>背景图片 URL</label><input type="text" id="bgUrlInput" placeholder="https://example.com/image.jpg" /></div>
+      <div class="form-group"><label>或上传图片</label><input type="file" id="bgFileInput" accept="image/*" /></div>
+      <div class="form-group"><label>透明度</label><input type="range" id="bgOpacity" min="0" max="100" value="15" /><span id="bgOpacityVal" style="font-size:12px;color:var(--text-dim);margin-left:8px">15%</span></div>
+      <div class="bg-preview" id="bgPreview"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-primary" onclick="applyBg()">应用</button>
+        <button class="btn btn-ghost" onclick="clearBg()">清除背景</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="sidebar">
+    <div class="sidebar-tabs">
+      <div class="sidebar-tab active" data-tab="connect" onclick="switchTab('connect')">连接</div>
+      <div class="sidebar-tab" data-tab="saved" onclick="switchTab('saved')">已保存</div>
+      <div class="sidebar-tab" data-tab="log" onclick="switchTab('log')">命令记录</div>
+    </div>
+    <div class="sidebar-content">
+      <!-- Connect tab -->
+      <div id="tab-connect">
+        <div class="form-row">
+          <div class="form-group"><label>主机地址</label><input type="text" id="host" placeholder="192.168.1.100" /></div>
+          <div class="form-group" style="max-width:80px"><label>端口</label><input type="number" id="port" value="22" /></div>
+        </div>
+        <div class="form-group"><label>用户名</label><input type="text" id="username" placeholder="root" /></div>
+        <div class="auth-tabs">
+          <div class="auth-tab active" data-auth="password" onclick="switchAuth('password')">密码</div>
+          <div class="auth-tab" data-auth="key" onclick="switchAuth('key')">密钥</div>
+        </div>
+        <div id="auth-password"><div class="form-group"><label>密码</label><input type="password" id="password" placeholder="••••••••" /></div></div>
+        <div id="auth-key" class="hidden"><div class="form-group"><label>私钥 (PEM格式)</label><textarea id="privateKey" placeholder="-----BEGIN RSA PRIVATE KEY-----"></textarea></div></div>
+        <details style="margin-bottom:12px"><summary style="font-size:12px;color:var(--text-dim);cursor:pointer">代理设置 (可选)</summary>
+          <div style="margin-top:8px">
+            <div class="form-group"><label>代理类型</label><select id="proxyType"><option value="">无代理</option><option value="http">HTTP 代理</option><option value="socks5">SOCKS5 代理</option></select></div>
+            <div class="form-row">
+              <div class="form-group"><label>代理主机</label><input type="text" id="proxyHost" placeholder="127.0.0.1" /></div>
+              <div class="form-group" style="max-width:80px"><label>端口</label><input type="number" id="proxyPort" placeholder="1080" /></div>
+            </div>
+          </div>
+        </details>
+        <div class="form-actions">
+          <button class="btn btn-primary" id="btnConnect" onclick="connect()">连接</button>
+          <button class="btn btn-ghost" onclick="saveConnection()">保存</button>
+        </div>
+      </div>
+      <!-- Saved tab -->
+      <div id="tab-saved" class="hidden">
+        <div id="savedList"></div>
+        <div id="savedEmpty" class="fp-empty"><div class="empty-icon">📂</div><div>暂无保存的连接</div></div>
+      </div>
+      <!-- Command log tab -->
+      <div id="tab-log" class="hidden">
+        <div class="log-toolbar"><button class="btn btn-ghost btn-sm" onclick="clearCmdLog()">清除</button><span id="logCount" style="font-size:11px;color:var(--text-dim)">0 条记录</span></div>
+        <div id="cmdLogList" class="cmd-log-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Terminal -->
+  <div class="terminal-area">
+    <div class="terminal-toolbar">
+      <div class="conn-info" id="connInfo">未连接</div>
+      <button class="btn btn-ghost btn-sm" onclick="clearTerminal()">清屏</button>
+      <button class="btn btn-danger btn-sm" id="btnDisconnect" onclick="disconnect()" style="display:none">断开</button>
+    </div>
+    <div id="terminal"></div>
+  </div>
+
+  <!-- File Panel -->
+  <div class="file-panel">
+    <div class="fp-header"><span>📁 远程文件</span><span id="fpCwdLabel" style="font-size:11px;color:var(--text-dim);font-weight:400"></span></div>
+    <div class="fp-path-bar">
+      <input type="text" class="fp-path-input" id="remotePath" value="/home" placeholder="输入远程路径..." onkeydown="if(event.key==='Enter')listRemoteFiles()" />
+      <button class="btn btn-ghost btn-icon" onclick="listRemoteFiles()" title="刷新">↻</button>
+      <button class="btn btn-ghost btn-icon" onclick="goParent()" title="上级目录">↑</button>
+    </div>
+    <div class="fp-toolbar">
+      <button class="btn btn-ghost btn-sm" onclick="toggleUploadZone()">📤 上传</button>
+      <button class="btn btn-ghost btn-sm" onclick="createRemoteDir()">📂 新建</button>
+      <div class="spacer"></div>
+      <span id="fpStatus" style="font-size:11px;color:var(--text-dim)"></span>
+    </div>
+    <div id="uploadZoneWrap" class="hidden">
+      <div class="upload-zone" id="uploadZone">
+        <div class="upload-icon">📤</div>
+        <div class="upload-text">拖拽文件到这里<br>或点击选择文件<br><span style="font-size:11px">上传到: <span id="uploadTargetPath" style="color:var(--accent)">/home</span></span></div>
+        <input type="file" id="fileInput" multiple />
+      </div>
+    </div>
+    <div class="fp-file-list" id="fpFileList">
+      <div class="fp-empty"><div class="empty-icon">🔌</div><div>连接服务器后浏览文件</div></div>
+    </div>
+    <div class="fp-upload-section" id="fpUploadSection" style="display:none">
+      <div class="fp-upload-header"><span>传输队列</span><button class="btn btn-ghost btn-sm" onclick="clearUploaded()">清除已完成</button></div>
+      <div class="fp-upload-list" id="fpUploadList"></div>
+    </div>
+  </div>
+</div>
+<div id="ctxMenu" class="ctx-menu hidden"></div>
+<script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xterm-addon-web-links@0.9.0/lib/xterm-addon-web-links.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
