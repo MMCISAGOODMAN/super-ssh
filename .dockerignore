@@ -1,0 +1,19 @@
+node_modules
+npm-debug.log*
+.git
+.gitignore
+.idea
+.claude
+.DS_Store
+
+# docs, scripts and local venvs are not needed to run the app
+docs
+scripts
+.venv*
+*.pptx
+*.pdf
+
+# docker
+Dockerfile
+docker-compose.yml
+.dockerignore

@@ -1,0 +1,15 @@
+services:
+  super-ssh:
+    build:
+      context: .
+      args:
+        NODE_IMAGE: ${NODE_IMAGE:-docker.m.daocloud.io/library/node:20-alpine}
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmmirror.com}
+        USE_CN_MIRROR: ${USE_CN_MIRROR:-1}
+    container_name: super-ssh
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+    restart: unless-stopped

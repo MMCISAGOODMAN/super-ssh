@@ -44,19 +44,80 @@ super-ssh/
 
 ## 快速开始
 
-### 安装依赖
+### Docker 一键启动（推荐）
+
+需已安装 [Docker](https://docs.docker.com/get-docker/) 与 Docker Compose。
+
+```bash
+cp .env.example .env   # 首次执行；已含国内镜像源配置
+docker compose up -d --build
+```
+
+或使用脚本：
+
+```bash
+chmod +x docker-start.sh
+./docker-start.sh
+```
+
+访问 http://localhost:3000
+
+停止服务：
+
+```bash
+docker compose down
+```
+
+#### 无法拉取 `node:20-alpine`（auth.docker.io 连接失败）
+
+这是 Docker Hub 网络问题，常见于国内网络。本项目 **默认已通过 `.env.example` 配置 DaoCloud 镜像源**，按上面步骤复制 `.env` 后重新构建即可：
+
+```bash
+docker compose up -d --build
+```
+
+`.env` 中相关配置：
+
+```env
+NODE_IMAGE=docker.m.daocloud.io/library/node:20-alpine
+NPM_REGISTRY=https://registry.npmmirror.com
+USE_CN_MIRROR=1
+```
+
+若 DaoCloud 不可用，可换其他镜像前缀（保持 `library/node:20-alpine` 路径）：
+
+```env
+NODE_IMAGE=docker.1ms.run/library/node:20-alpine
+```
+
+或在 Docker Desktop → Settings → Docker Engine 配置 registry mirror 后改回官方镜像：
+
+```json
+{
+  "registry-mirrors": [
+    "https://docker.m.daocloud.io",
+    "https://hub-mirror.c.163.com"
+  ]
+}
+```
+
+然后设置 `NODE_IMAGE=node:20-alpine` 再构建。
+
+### 本地开发
+
+#### 安装依赖
 
 ```bash
 npm install
 ```
 
-### 启动服务
+#### 启动服务
 
 ```bash
 npm start
 ```
 
-### 访问
+#### 访问
 
 打开浏览器访问 http://localhost:3000
 
