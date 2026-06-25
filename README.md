@@ -6,17 +6,34 @@
 
 ### 🔐 SSH 连接
 - 支持密码和 SSH 密钥（PEM 格式）两种认证方式
+- 支持加密私钥口令（Passphrase）
 - 支持 HTTP / SOCKS5 代理设置
-- 连接信息可保存到本地，下次一键连接
+- 连接信息可保存到本地，支持编辑、导出/导入 JSON
+- 最近连接快速重连
+- 连接时长计时显示
 - 基于 xterm.js 的全功能 Web 终端，支持 256 色
+
+### 🖥️ 终端增强
+- 终端搜索（Ctrl+F）
+- 字体大小调节（Ctrl +/-）
+- 多主题切换（Dark / Light / Dracula / Monokai）
+- 复制选中内容、全屏模式（F11）
+- 命令片段库：预设常用运维命令，一键发送或执行
+- 快捷键面板（⌨️ 按钮查看）
 
 ### 📁 远程文件管理
 - 可视化浏览远程服务器文件系统
-- 支持文件夹进入、上级目录导航
-- **拖拽或点击上传文件**到远程目录
-- 文件下载、删除、新建文件夹
+- 面包屑路径导航、文件筛选与排序（名称/大小/时间）
+- 显示文件权限、修改时间
+- 支持显示隐藏文件
+- **拖拽或点击上传**、下载、删除、新建文件夹/空文件
+- **重命名**、**文本预览**（512KB 以内）
 - 右键菜单快捷操作
-- 上传/下载进度实时显示
+- 文件面板可折叠，扩大终端区域
+
+### 🖥️ 服务器信息
+- 连接后查看主机名、系统版本、运行时间
+- CPU 核心数、内存、磁盘、负载一览
 
 ### 📋 命令学习
 - 所有 GUI 操作自动生成对应的 SSH 命令
@@ -103,6 +120,53 @@ NODE_IMAGE=docker.1ms.run/library/node:20-alpine
 
 然后设置 `NODE_IMAGE=node:20-alpine` 再构建。
 
+### 发布镜像到中央仓库
+
+#### 方式一：本地手动推送
+
+1. 注册并登录目标仓库：
+
+| 平台 | 登录命令 | 镜像地址示例 |
+|------|----------|--------------|
+| [Docker Hub](https://hub.docker.com/) | `docker login` | `docker.io/<用户名>/super-ssh` |
+| [GitHub Packages (GHCR)](https://github.com/features/packages) | `echo $GITHUB_TOKEN \| docker login ghcr.io -u <用户名> --password-stdin` | `ghcr.io/MMCISAGOODMAN/super-ssh` |
+| [阿里云 ACR](https://cr.console.aliyun.com/) | `docker login registry.cn-hangzhou.aliyuncs.com` | `registry.cn-hangzhou.aliyuncs.com/<命名空间>/super-ssh` |
+
+2. 构建并推送（支持 amd64 / arm64）：
+
+```bash
+chmod +x docker-publish.sh
+./docker-publish.sh docker.io/<你的用户名>/super-ssh
+# 或
+./docker-publish.sh ghcr.io/MMCISAGOODMAN/super-ssh
+```
+
+3. 他人拉取运行：
+
+```bash
+docker run -d -p 3000:3000 --name super-ssh ghcr.io/MMCISAGOODMAN/super-ssh:latest
+```
+
+#### 方式二：GitHub Actions 自动发布（GHCR）
+
+仓库已配置 `.github/workflows/docker-publish.yml`，推送版本 tag 后自动构建并发布到 GHCR：
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+也可在 GitHub → Actions → **Publish Docker Image** → **Run workflow** 手动触发。
+
+发布后镜像地址：
+
+```
+ghcr.io/MMCISAGOODMAN/super-ssh:1.0.0
+ghcr.io/MMCISAGOODMAN/super-ssh:latest
+```
+
+> GHCR 首次使用需在 GitHub 仓库 **Settings → Packages** 中将 Package 可见性设为 Public（若需公开拉取）。
+
 ### 本地开发
 
 #### 安装依赖
@@ -115,6 +179,7 @@ npm install
 
 ```bash
 npm start
+
 ```
 
 #### 访问
