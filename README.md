@@ -1,13 +1,13 @@
 # ⚡ Super SSH
 
-一个基于 Web 的 SSH 可视化终端工具，支持服务器连接管理、远程文件浏览与传输、命令学习等功能。
+一个基于 Web 的 SSH 可视化终端工具，支持服务器连接管理、远程文件浏览与传输、命令学习等功能。提供 **桌面安装包**、**便携版** 和 **Docker** 三种使用方式。
 
 ## 功能特性
 
 ### 🔐 SSH 连接
 - 支持密码和 SSH 密钥（PEM 格式）两种认证方式
 - 支持加密私钥口令（Passphrase）
-- 支持 HTTP / SOCKS5 代理设置
+- 支持 **HTTP / SOCKS5 代理**（v1.2.0 已完整实现）
 - 连接信息可保存到本地，支持编辑、导出/导入 JSON
 - 最近连接快速重连
 - 连接时长计时显示
@@ -46,22 +46,53 @@
 - 背景透明度可调
 - 深色主题，毛玻璃效果
 
+### 💻 桌面与便携版（v1.2.0）
+- Windows / macOS / Linux 桌面安装包（Electron）
+- 免安装便携版（内置 Node，解压即用）
+- 系统托盘驻留，关闭窗口不退出服务
+
 ## 项目结构
 
 ```
 super-ssh/
 ├── package.json          # 项目配置
+├── electron/             # Electron 桌面壳
+├── scripts/              # 打包与资源脚本
 ├── src/
 │   └── server.js         # Node.js 后端 (Express + WebSocket + SSH2)
 └── public/
     ├── index.html        # 主页面
+    ├── vendor/xterm/     # 本地化 xterm 资源
     ├── style.css         # 样式文件
     └── app.js            # 前端逻辑
 ```
 
 ## 快速开始
 
-### Docker 一键启动（推荐）
+### 桌面安装（推荐个人用户）
+
+从 [GitHub Releases](https://github.com/MMCISAGOODMAN/super-ssh/releases) 下载对应平台安装包：
+
+| 平台 | 推荐下载 |
+|------|----------|
+| Windows | `Super-SSH-*-win-x64-Setup.exe` |
+| macOS | `Super-SSH-*-mac-arm64.dmg`（Apple Silicon）或 `*-mac-x64.dmg`（Intel） |
+| Linux | `Super-SSH-*-linux-x64.AppImage` |
+
+安装后双击启动即可，无需配置 Node.js 环境。
+
+#### 便携版
+
+解压对应平台的 `super-ssh-*-portable.zip`（Windows）或 `.tar.gz`（macOS/Linux），运行：
+
+- Windows：双击 `Super SSH.bat`
+- macOS / Linux：`./super-ssh.sh`
+
+浏览器将自动打开 http://localhost:3000
+
+> macOS 首次打开未签名应用时，请在「系统设置 → 隐私与安全性」中允许运行。
+
+### Docker 一键启动（推荐服务器部署）
 
 需已安装 [Docker](https://docs.docker.com/get-docker/) 与 Docker Compose。
 
@@ -152,8 +183,8 @@ docker run -d -p 3000:3000 --name super-ssh ghcr.io/MMCISAGOODMAN/super-ssh:late
 仓库已配置 `.github/workflows/docker-publish.yml`，推送版本 tag 后自动构建并发布到 GHCR：
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.2.0
+git push origin v1.2.0
 ```
 
 也可在 GitHub → Actions → **Publish Docker Image** → **Run workflow** 手动触发。
@@ -161,9 +192,20 @@ git push origin v1.0.0
 发布后镜像地址：
 
 ```
-ghcr.io/MMCISAGOODMAN/super-ssh:1.0.0
+ghcr.io/MMCISAGOODMAN/super-ssh:1.2.0
 ghcr.io/MMCISAGOODMAN/super-ssh:latest
 ```
+
+#### 方式三：GitHub Actions 自动发布桌面安装包
+
+仓库已配置 `.github/workflows/release.yml`，推送版本 tag 后自动构建 Windows / macOS / Linux 安装包并创建 GitHub Release：
+
+```bash
+git tag v1.2.0
+git push origin v1.2.0
+```
+
+将同时触发 Docker 镜像发布与桌面安装包发布。安装包可在 [Releases](https://github.com/MMCISAGOODMAN/super-ssh/releases) 页面下载。
 
 > GHCR 首次使用需在 GitHub 仓库 **Settings → Packages** 中将 Package 可见性设为 Public（若需公开拉取）。
 
@@ -179,7 +221,20 @@ npm install
 
 ```bash
 npm start
+```
 
+#### 桌面开发模式
+
+```bash
+npm run electron:dev
+```
+
+#### 本地打包（需先安装依赖）
+
+```bash
+npm run prepare:build    # 准备 app 与 Node 运行时
+npm run electron:build   # 构建 Electron 安装包 → dist/electron/
+npm run package:portable # 构建便携版 → dist/portable/
 ```
 
 #### 访问

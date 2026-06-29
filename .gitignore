@@ -8,3 +8,5 @@ docs/
 **/__pycache__/
 *.tar
 *.tar.gz
+build/
+dist/

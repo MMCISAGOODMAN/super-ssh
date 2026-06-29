@@ -410,6 +410,20 @@ function stopSessionTimer() {
 }
 
 /* ========== Connection ========== */
+function getProxyFromForm() {
+  return {
+    proxyType: document.getElementById('proxyType').value,
+    proxyHost: document.getElementById('proxyHost').value.trim(),
+    proxyPort: parseInt(document.getElementById('proxyPort').value, 10) || 0,
+  };
+}
+
+function fillProxyFields(cfg) {
+  document.getElementById('proxyType').value = (cfg && cfg.proxyType) || '';
+  document.getElementById('proxyHost').value = (cfg && cfg.proxyHost) || '';
+  document.getElementById('proxyPort').value = (cfg && cfg.proxyPort) || '';
+}
+
 function connect(cfg) {
   if (ws) ws.close();
   var host = (cfg && cfg.host) || document.getElementById('host').value.trim();
@@ -418,6 +432,9 @@ function connect(cfg) {
   var password = (cfg && cfg.password) || document.getElementById('password').value;
   var privateKey = (cfg && cfg.privateKey) || document.getElementById('privateKey').value.trim();
   var passphrase = (cfg && cfg.passphrase) || document.getElementById('passphrase').value;
+  var proxy = cfg && cfg.proxyType !== undefined
+    ? { proxyType: cfg.proxyType || '', proxyHost: cfg.proxyHost || '', proxyPort: cfg.proxyPort || 0 }
+    : getProxyFromForm();
   if (!host || !username) { alert('请输入主机地址和用户名'); return; }
 
   addRecent({ host: host, port: port, username: username });
@@ -429,6 +446,7 @@ function connect(cfg) {
     ws.send(JSON.stringify({
       type: 'connect', host: host, port: port, username: username,
       password: password, privateKey: privateKey, passphrase: passphrase,
+      proxyType: proxy.proxyType, proxyHost: proxy.proxyHost, proxyPort: proxy.proxyPort,
     }));
   };
   ws.onmessage = onWsMessage;
@@ -558,11 +576,16 @@ function saveConnection() {
   var password = document.getElementById('password').value;
   var privateKey = document.getElementById('privateKey').value.trim();
   var passphrase = document.getElementById('passphrase').value;
+  var proxy = getProxyFromForm();
   if (!host || !username) { alert('请至少填写主机地址和用户名'); return; }
   var name = prompt('连接名称:', username + '@' + host);
   if (!name) return;
   var conns = getSavedConnections();
-  conns.push({ id: Date.now(), name: name, host: host, port: port, username: username, password: password, privateKey: privateKey, passphrase: passphrase });
+  conns.push({
+    id: Date.now(), name: name, host: host, port: port, username: username,
+    password: password, privateKey: privateKey, passphrase: passphrase,
+    proxyType: proxy.proxyType, proxyHost: proxy.proxyHost, proxyPort: proxy.proxyPort,
+  });
   localStorage.setItem('ssh_connections', JSON.stringify(conns));
   renderSavedList();
   switchTab('saved');
@@ -593,6 +616,7 @@ function quickConnect(id) {
   document.getElementById('password').value = c.password || '';
   document.getElementById('privateKey').value = c.privateKey || '';
   document.getElementById('passphrase').value = c.passphrase || '';
+  fillProxyFields(c);
   switchAuth(c.privateKey ? 'key' : 'password');
   switchTab('connect');
   connect(c);

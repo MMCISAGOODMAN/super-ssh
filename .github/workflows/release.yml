@@ -1,0 +1,150 @@
+name: Release Desktop Packages
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare build assets
+        run: |
+          node scripts/prepare-vendor.mjs
+          node scripts/prepare-app-bundle.mjs
+          node scripts/prepare-node-runtime.mjs
+
+      - name: Build Electron (Windows)
+        run: npx electron-builder --win --publish never
+
+      - name: Build portable package
+        run: node scripts/package-portable.mjs
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            dist/electron/*
+            dist/portable/*
+
+  build-macos:
+    strategy:
+      matrix:
+        arch: [x64, arm64]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare build assets
+        run: |
+          node scripts/prepare-vendor.mjs
+          node scripts/prepare-app-bundle.mjs
+          node scripts/prepare-node-runtime.mjs
+
+      - name: Build Electron (macOS ${{ matrix.arch }})
+        run: npx electron-builder --mac --${{ matrix.arch }} --publish never
+
+      - name: Build portable package
+        if: matrix.arch == 'arm64'
+        run: node scripts/package-portable.mjs
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ matrix.arch }}
+          path: |
+            dist/electron/*
+            dist/portable/*
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare build assets
+        run: |
+          node scripts/prepare-vendor.mjs
+          node scripts/prepare-app-bundle.mjs
+          node scripts/prepare-node-runtime.mjs
+
+      - name: Build Electron (Linux)
+        run: npx electron-builder --linux --publish never
+
+      - name: Build portable package
+        run: node scripts/package-portable.mjs
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: |
+            dist/electron/*
+            dist/portable/*
+
+  create-release:
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Resolve version
+        id: meta
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          else
+            VERSION=$(node -p "require('./package.json').version")
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: Super SSH v${{ steps.meta.outputs.version }}
+          body_path: .github/release-notes/v${{ steps.meta.outputs.version }}.md
+          files: artifacts/**
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

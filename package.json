@@ -1,18 +1,86 @@
 {
   "name": "super-ssh",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "SSH Visual Interface",
-  "main": "src/server.js",
+  "main": "electron/main.js",
+  "author": "MMCISAGOODMAN",
+  "license": "MIT",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node src/server.js"
+    "dev": "node src/server.js",
+    "prepare:vendor": "node scripts/prepare-vendor.mjs",
+    "prepare:app": "node scripts/prepare-app-bundle.mjs",
+    "prepare:node": "node scripts/prepare-node-runtime.mjs",
+    "prepare:build": "npm run prepare:vendor && npm run prepare:app && npm run prepare:node",
+    "postinstall": "node scripts/prepare-vendor.mjs",
+    "electron:dev": "npm run prepare:vendor && electron .",
+    "electron:build": "npm run prepare:build && electron-builder",
+    "package:portable": "node scripts/package-portable.mjs"
   },
   "dependencies": {
     "express": "^4.18.2",
+    "socks": "^2.8.3",
     "ssh2": "^1.14.0",
-    "ws": "^8.16.0"
+    "ws": "^8.16.0",
+    "xterm": "^5.3.0",
+    "xterm-addon-fit": "^0.8.0",
+    "xterm-addon-search": "^0.13.0",
+    "xterm-addon-web-links": "^0.9.0"
   },
   "devDependencies": {
+    "archiver": "^7.0.1",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
     "playwright": "^1.60.0"
+  },
+  "build": {
+    "appId": "com.superssh.app",
+    "productName": "Super SSH",
+    "directories": {
+      "output": "dist/electron",
+      "buildResources": "electron/icons"
+    },
+    "files": [
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      { "from": "build/app", "to": "app" },
+      { "from": "build/node", "to": "node" }
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "artifactName": "Super-SSH-${version}-win-${arch}-${target}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "Super-SSH-${version}-win-${arch}-Setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "Super-SSH-${version}-win-${arch}-Portable.${ext}"
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] },
+        { "target": "zip", "arch": ["x64", "arm64"] }
+      ],
+      "category": "public.app-category.developer-tools",
+      "artifactName": "Super-SSH-${version}-mac-${arch}.${ext}"
+    },
+    "dmg": {
+      "artifactName": "Super-SSH-${version}-mac-${arch}.dmg"
+    },
+    "linux": {
+      "target": [
+        { "target": "AppImage", "arch": ["x64"] },
+        { "target": "deb", "arch": ["x64"] }
+      ],
+      "category": "Network",
+      "artifactName": "Super-SSH-${version}-linux-${arch}.${ext}"
+    }
   }
 }

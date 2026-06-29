@@ -2,13 +2,23 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const { Client } = require('ssh2');
+const { SocksClient } = require('socks');
+const net = require('net');
 const path = require('path');
+const { exec } = require('child_process');
+const pkg = require('../package.json');
 
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 const PREVIEW_MAX_BYTES = 512 * 1024;
+const APP_MODE = process.env.SUPER_SSH_MODE || '';
+const IS_LOCAL_MODE = APP_MODE === 'desktop' || APP_MODE === 'portable';
+
+app.get('/api/health', (_req, res) => {
+  res.json({ ok: true, version: pkg.version, mode: APP_MODE || 'server' });
+});
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use(express.json({ limit: '100mb' }));
@@ -18,6 +28,69 @@ const connections = new Map();
 function send(ws, payload) {
   if (ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(payload));
+  }
+}
+
+function createProxySocket(proxyType, proxyHost, proxyPort, targetHost, targetPort) {
+  return new Promise((resolve, reject) => {
+    if (proxyType === 'socks5') {
+      SocksClient.createConnection({
+        proxy: { host: proxyHost, port: proxyPort, type: 5 },
+        command: 'connect',
+        destination: { host: targetHost, port: targetPort },
+      })
+        .then((info) => resolve(info.socket))
+        .catch(reject);
+      return;
+    }
+
+    if (proxyType === 'http') {
+      const socket = net.connect(proxyPort, proxyHost);
+      let settled = false;
+
+      const fail = (err) => {
+        if (settled) return;
+        settled = true;
+        socket.destroy();
+        reject(err);
+      };
+
+      socket.on('error', fail);
+      socket.on('connect', () => {
+        socket.write(
+          `CONNECT ${targetHost}:${targetPort} HTTP/1.1\r\n`
+          + `Host: ${targetHost}:${targetPort}\r\n`
+          + 'Proxy-Connection: keep-alive\r\n\r\n',
+        );
+      });
+
+      socket.on('data', (chunk) => {
+        if (settled) return;
+        const header = chunk.toString();
+        const statusLine = header.split('\r\n')[0] || '';
+        if (!/\s200\s/.test(statusLine)) {
+          fail(new Error(`HTTP proxy failed: ${statusLine.trim() || 'unknown error'}`));
+          return;
+        }
+        settled = true;
+        socket.removeListener('error', fail);
+        resolve(socket);
+      });
+      return;
+    }
+
+    reject(new Error(`Unsupported proxy type: ${proxyType}`));
+  });
+}
+
+function openBrowser(url) {
+  const platform = process.platform;
+  if (platform === 'darwin') {
+    exec(`open "${url}"`);
+  } else if (platform === 'win32') {
+    exec(`start "" "${url}"`, { shell: true });
+  } else {
+    exec(`xdg-open "${url}"`);
   }
 }
 
@@ -82,7 +155,10 @@ wss.on('connection', (ws) => {
     }
 
     if (msg.type === 'connect') {
-      const { host, port, username, password, privateKey, passphrase } = msg;
+      const {
+        host, port, username, password, privateKey, passphrase,
+        proxyType, proxyHost, proxyPort,
+      } = msg;
       sshClient = new Client();
 
       sshClient.on('ready', async () => {
@@ -141,8 +217,24 @@ wss.on('connection', (ws) => {
         if (passphrase) connectConfig.passphrase = passphrase;
       }
 
-      sshClient.connect(connectConfig);
-      connections.set(connId, { client: sshClient, stream: null });
+      const targetPort = port || 22;
+      const useProxy = proxyType && proxyHost && proxyPort;
+
+      const doConnect = (sock) => {
+        if (sock) connectConfig.sock = sock;
+        sshClient.connect(connectConfig);
+        connections.set(connId, { client: sshClient, stream: null });
+      };
+
+      if (useProxy) {
+        createProxySocket(proxyType, proxyHost, Number(proxyPort), host, targetPort)
+          .then(doConnect)
+          .catch((err) => {
+            send(ws, { type: 'error', data: `Proxy Error: ${err.message}` });
+          });
+      } else {
+        doConnect();
+      }
     }
 
     if (msg.type === 'input' && sshStream) {
@@ -364,7 +456,13 @@ wss.on('connection', (ws) => {
 });
 
 const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || '0.0.0.0';
+const HOST = process.env.HOST || (IS_LOCAL_MODE ? '127.0.0.1' : '0.0.0.0');
+const displayHost = HOST === '0.0.0.0' ? 'localhost' : HOST;
+
 server.listen(PORT, HOST, () => {
-  console.log(`Super SSH running at http://${HOST}:${PORT}`);
+  const url = `http://${displayHost}:${PORT}`;
+  console.log(`Super SSH v${pkg.version} running at ${url}`);
+  if (process.env.SUPER_SSH_OPEN_BROWSER === '1') {
+    openBrowser(url);
+  }
 });
