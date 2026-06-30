@@ -15,7 +15,7 @@ RUN if [ "$USE_CN_MIRROR" = "1" ]; then \
 COPY package.json package-lock.json* ./
 
 RUN if [ -n "$NPM_REGISTRY" ]; then npm config set registry "$NPM_REGISTRY"; fi \
- && npm ci --omit=dev
+ && npm ci --omit=dev --ignore-scripts
 
 COPY public ./public
 COPY src ./src
