@@ -19,9 +19,6 @@ RUN if [ -n "$NPM_REGISTRY" ]; then npm config set registry "$NPM_REGISTRY"; fi 
 
 COPY public ./public
 COPY src ./src
-COPY scripts/prepare-vendor.mjs ./scripts/prepare-vendor.mjs
-
-RUN node scripts/prepare-vendor.mjs
 
 ENV NODE_ENV=production
 ENV PORT=3000
