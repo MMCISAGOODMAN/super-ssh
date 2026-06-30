@@ -80,6 +80,7 @@
         { "target": "deb", "arch": ["x64"] }
       ],
       "category": "Network",
+      "maintainer": "MMCISAGOODMAN <mmcisagoodman@users.noreply.github.com>",
       "artifactName": "Super-SSH-${version}-linux-${arch}.${ext}"
     }
   }
