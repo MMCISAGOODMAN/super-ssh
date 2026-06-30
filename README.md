@@ -160,7 +160,7 @@ NODE_IMAGE=docker.1ms.run/library/node:20-alpine
 | 平台 | 登录命令 | 镜像地址示例 |
 |------|----------|--------------|
 | [Docker Hub](https://hub.docker.com/) | `docker login` | `docker.io/<用户名>/super-ssh` |
-| [GitHub Packages (GHCR)](https://github.com/features/packages) | `echo $GITHUB_TOKEN \| docker login ghcr.io -u <用户名> --password-stdin` | `ghcr.io/MMCISAGOODMAN/super-ssh` |
+| [GitHub Packages (GHCR)](https://github.com/features/packages) | `echo $GITHUB_TOKEN \| docker login ghcr.io -u <用户名> --password-stdin` | `ghcr.io/mmcisagoodman/super-ssh` |
 | [阿里云 ACR](https://cr.console.aliyun.com/) | `docker login registry.cn-hangzhou.aliyuncs.com` | `registry.cn-hangzhou.aliyuncs.com/<命名空间>/super-ssh` |
 
 2. 构建并推送（支持 amd64 / arm64）：
@@ -169,13 +169,13 @@ NODE_IMAGE=docker.1ms.run/library/node:20-alpine
 chmod +x docker-publish.sh
 ./docker-publish.sh docker.io/<你的用户名>/super-ssh
 # 或
-./docker-publish.sh ghcr.io/MMCISAGOODMAN/super-ssh
+./docker-publish.sh ghcr.io/mmcisagoodman/super-ssh
 ```
 
 3. 他人拉取运行：
 
 ```bash
-docker run -d -p 3000:3000 --name super-ssh ghcr.io/MMCISAGOODMAN/super-ssh:latest
+docker run -d -p 3000:3000 --name super-ssh ghcr.io/mmcisagoodman/super-ssh:latest
 ```
 
 #### 方式二：GitHub Actions 自动发布（GHCR）
@@ -192,8 +192,8 @@ git push origin v1.2.0
 发布后镜像地址：
 
 ```
-ghcr.io/MMCISAGOODMAN/super-ssh:1.2.0
-ghcr.io/MMCISAGOODMAN/super-ssh:latest
+ghcr.io/mmcisagoodman/super-ssh:1.2.0
+ghcr.io/mmcisagoodman/super-ssh:latest
 ```
 
 #### 方式三：GitHub Actions 自动发布桌面安装包
