@@ -1,52 +1,62 @@
-# ⚡ Super SSH
+# Super SSH
 
 一个基于 Web 的 SSH 可视化终端工具，支持服务器连接管理、远程文件浏览与传输、命令学习等功能。提供 **桌面安装包**、**便携版** 和 **Docker** 三种使用方式。
 
 ## 功能特性
 
-### 🔐 SSH 连接
+### SSH 连接
 - 支持密码和 SSH 密钥（PEM 格式）两种认证方式
 - 支持加密私钥口令（Passphrase）
-- 支持 **HTTP / SOCKS5 代理**（v1.2.0 已完整实现）
+- 支持 **HTTP / SOCKS5 代理**
 - 连接信息可保存到本地，支持编辑、导出/导入 JSON
 - 最近连接快速重连
 - 连接时长计时显示
 - 基于 xterm.js 的全功能 Web 终端，支持 256 色
+- **多标签会话**（v1.3.0）：同一窗口同时连接多台服务器，切换不丢输出
 
-### 🖥️ 终端增强
+### 终端增强
 - 终端搜索（Ctrl+F）
 - 字体大小调节（Ctrl +/-）
 - 多主题切换（Dark / Light / Dracula / Monokai）
 - 复制选中内容、全屏模式（F11）
 - 命令片段库：预设常用运维命令，一键发送或执行
-- 快捷键面板（⌨️ 按钮查看）
+- 快捷键面板（顶栏快捷键按钮查看）
 
-### 📁 远程文件管理
+### 远程文件管理
 - 可视化浏览远程服务器文件系统
 - 面包屑路径导航、文件筛选与排序（名称/大小/时间）
 - 显示文件权限、修改时间
 - 支持显示隐藏文件
 - **拖拽或点击上传**、下载、删除、新建文件夹/空文件
-- **重命名**、**文本预览**（512KB 以内）
+- **大文件分片上传**（v1.3.0）：≥1MB 自动分片，带进度条，单文件上限 500MB
+- **远程文本编辑**（v1.3.0）：打开/编辑/保存，上限 1MB；Ctrl+S 快捷保存
+- **重命名**、文本预览
 - 右键菜单快捷操作
 - 文件面板可折叠，扩大终端区域
 
-### 🖥️ 服务器信息
+### 服务器信息
 - 连接后查看主机名、系统版本、运行时间
 - CPU 核心数、内存、磁盘、负载一览
 
-### 📋 命令学习
+### 命令学习
 - 所有 GUI 操作自动生成对应的 SSH 命令
 - 左侧「命令记录」面板实时显示命令
 - 命令可一键复制，方便学习
 - 不同操作类型用颜色区分（导航/上传/下载/删除/新建）
 
-### 🎨 界面定制
+### AI 助手（v1.4.0）
+- 默认对接本机 [Ollama](https://ollama.com/)（OpenAI 兼容协议）
+- 也可切换 OpenAI / DeepSeek / 通义千问 / 自定义任意兼容厂商
+- 自然语言生成 1～3 条候选命令；解释终端选中文本（或最近输出）
+- **确认后才发送**到当前会话终端；高危命令二次确认
+- API Key 仅经本机后端转发，浏览器不直连模型
+
+### 界面定制
 - 支持自定义背景图片（URL 或本地上传）
 - 背景透明度可调
 - 深色主题，毛玻璃效果
 
-### 💻 桌面与便携版（v1.2.0）
+### 桌面与便携版
 - Windows / macOS / Linux 桌面安装包（Electron）
 - 免安装便携版（内置 Node，解压即用）
 - 系统托盘驻留，关闭窗口不退出服务
@@ -109,6 +119,21 @@ chmod +x docker-start.sh
 ```
 
 访问 http://localhost:3000
+
+Docker 默认通过 `host.docker.internal` 访问宿主机 Ollama。请先在宿主机安装并启动 Ollama：
+
+```bash
+ollama serve
+ollama pull llama3.2
+```
+
+`.env` 中可覆盖：
+
+```env
+AI_BASE_URL=http://host.docker.internal:11434/v1
+AI_MODEL=llama3.2
+AI_API_KEY=          # Ollama 可留空；云厂商填写
+```
 
 停止服务：
 
@@ -183,8 +208,8 @@ docker run -d -p 3000:3000 --name super-ssh ghcr.io/mmcisagoodman/super-ssh:late
 仓库已配置 `.github/workflows/docker-publish.yml`，推送版本 tag 后自动构建并发布到 GHCR：
 
 ```bash
-git tag v1.2.0
-git push origin v1.2.0
+git tag v1.4.0
+git push origin v1.4.0
 ```
 
 也可在 GitHub → Actions → **Publish Docker Image** → **Run workflow** 手动触发。
@@ -192,7 +217,7 @@ git push origin v1.2.0
 发布后镜像地址：
 
 ```
-ghcr.io/mmcisagoodman/super-ssh:1.2.0
+ghcr.io/mmcisagoodman/super-ssh:1.4.0
 ghcr.io/mmcisagoodman/super-ssh:latest
 ```
 
@@ -201,8 +226,8 @@ ghcr.io/mmcisagoodman/super-ssh:latest
 仓库已配置 `.github/workflows/release.yml`，推送版本 tag 后自动构建 Windows / macOS / Linux 安装包并创建 GitHub Release：
 
 ```bash
-git tag v1.2.0
-git push origin v1.2.0
+git tag v1.4.0
+git push origin v1.4.0
 ```
 
 将同时触发 Docker 镜像发布与桌面安装包发布。安装包可在 [Releases](https://github.com/MMCISAGOODMAN/super-ssh/releases) 页面下载。
@@ -216,6 +241,16 @@ git push origin v1.2.0
 ```bash
 npm install
 ```
+
+#### AI 助手（可选，默认 Ollama）
+
+```bash
+# 安装 https://ollama.com/ 后
+ollama serve
+ollama pull llama3.2
+```
+
+本地开发默认 `AI_BASE_URL=http://127.0.0.1:11434/v1`。也可在环境变量或侧栏「模型设置」中改为其他 OpenAI 兼容服务。
 
 #### 启动服务
 
@@ -255,10 +290,10 @@ npm run package:portable # 构建便携版 → dist/portable/
 - 悬停显示删除按钮
 
 ### 文件操作
-- **上传**：点击 `📤 上传` 展开拖拽区域，拖拽或选择文件
+- **上传**：点击「上传」展开拖拽区域，拖拽或选择文件
 - **进入目录**：双击文件夹
 - **上级目录**：点击 `↑` 按钮
-- **新建文件夹**：点击 `📂 新建`
+- **新建文件夹**：点击「新建」
 - **下载/删除**：hover 文件行显示操作按钮，或右键菜单
 
 ### 命令记录
@@ -266,8 +301,15 @@ npm run package:portable # 构建便携版 → dist/portable/
 - 每次文件操作会自动生成对应 SSH 命令
 - 点击命令可一键复制
 
+### AI 助手
+1. 确保本机 Ollama 已启动并拉取模型（或在「模型设置」填写云厂商 Base URL / Key）
+2. 左侧打开「AI」标签
+3. 输入需求 →「生成命令」→ 确认后「发送到终端」
+4. 在终端选中输出 →「解释选中」查看说明
+5. 高危命令会标红，发送前需再次确认
+
 ### 背景设置
-1. 点击右上角 `🎨 背景` 按钮
+1. 点击右上角「背景」按钮
 2. 输入图片 URL 或上传本地图片
 3. 调节透明度滑块
 4. 点击「应用」
@@ -281,5 +323,7 @@ npm run package:portable # 构建便携版 → dist/portable/
 ## 注意事项
 
 - 密码和密钥保存在浏览器 localStorage 中，请勿在公共设备上使用
+- AI API Key 同样仅存 localStorage 并经本机后端转发，请勿在公共设备上使用
+- AI 建议命令不会自动执行，须手动确认发送；高危命令有二次确认
 - 大文件传输建议使用稳定的网络连接
 - 背景图片建议使用高分辨率图片以获得最佳效果

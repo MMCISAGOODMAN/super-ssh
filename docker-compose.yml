@@ -12,4 +12,9 @@ services:
     environment:
       - PORT=3000
       - NODE_ENV=production
+      - AI_BASE_URL=${AI_BASE_URL:-http://host.docker.internal:11434/v1}
+      - AI_MODEL=${AI_MODEL:-llama3.2}
+      - AI_API_KEY=${AI_API_KEY:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped

@@ -9,21 +9,31 @@
 </head>
 <body>
 <div class="header">
-  <h1>⚡ Super SSH</h1>
+  <button type="button" class="btn btn-ghost btn-sm btn-icon-only sidebar-toggle" id="sidebarToggle" onclick="toggleSidebarDrawer()" title="侧栏" aria-label="打开侧栏">
+    <span data-icon="menu"></span>
+  </button>
+  <div class="brand" aria-label="Super SSH">
+    <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+      <rect x="1.5" y="1.5" width="29" height="29" rx="8" fill="none" stroke="currentColor" stroke-width="1.75"/>
+      <path d="M9 11l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M16 21h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <span class="brand-word"><span class="brand-super">Super</span><span class="brand-ssh">SSH</span></span>
+  </div>
   <div class="status-dot" id="statusDot"></div>
   <span id="statusText" class="header-status">未连接</span>
   <span id="sessionTimer" class="header-timer hidden"></span>
   <div class="header-right">
-    <button class="btn btn-ghost btn-sm" onclick="toggleShortcuts()" title="快捷键">⌨️</button>
-    <button class="btn btn-ghost btn-sm" onclick="cycleTheme()" title="切换主题" id="themeBtn">🌙</button>
-    <button class="btn btn-ghost btn-sm" onclick="toggleBgModal()" title="背景">🎨</button>
+    <button class="btn btn-ghost btn-sm btn-icon-only" onclick="toggleShortcuts()" title="快捷键"><span data-icon="keyboard"></span></button>
+    <button class="btn btn-ghost btn-sm btn-icon-only" onclick="cycleTheme()" title="切换主题" id="themeBtn"><span data-icon="moon"></span></button>
+    <button class="btn btn-ghost btn-sm btn-icon-only" onclick="toggleBgModal()" title="背景"><span data-icon="image"></span></button>
   </div>
 </div>
 
 <!-- Background modal -->
 <div id="bgModal" class="modal-overlay hidden" onclick="if(event.target===this)toggleBgModal()">
   <div class="modal">
-    <div class="modal-header"><span>🎨 背景设置</span><button class="btn btn-ghost btn-sm" onclick="toggleBgModal()">✕</button></div>
+    <div class="modal-header"><span><span data-icon="image"></span>背景设置</span><button class="btn btn-ghost btn-sm" onclick="toggleBgModal()">✕</button></div>
     <div class="modal-body">
       <div class="form-group"><label>背景图片 URL</label><input type="text" id="bgUrlInput" placeholder="https://example.com/image.jpg" /></div>
       <div class="form-group"><label>或上传图片</label><input type="file" id="bgFileInput" accept="image/*" /></div>
@@ -37,18 +47,28 @@
   </div>
 </div>
 
-<!-- Preview modal -->
+<!-- Editor modal -->
 <div id="previewModal" class="modal-overlay hidden" onclick="if(event.target===this)closePreview()">
   <div class="modal modal-lg">
-    <div class="modal-header"><span id="previewTitle">文件预览</span><button class="btn btn-ghost btn-sm" onclick="closePreview()">✕</button></div>
-    <div class="modal-body"><pre id="previewContent" class="preview-content"></pre></div>
+    <div class="modal-header">
+      <span id="previewTitle">远程编辑</span>
+      <div class="modal-header-actions">
+        <button class="btn btn-primary btn-sm" id="btnSaveFile" onclick="saveRemoteFile()">保存</button>
+        <button class="btn btn-ghost btn-sm" onclick="downloadEditorContent()">下载</button>
+        <button class="btn btn-ghost btn-sm" onclick="closePreview()">✕</button>
+      </div>
+    </div>
+    <div class="modal-body editor-body">
+      <textarea id="editorContent" class="editor-content" spellcheck="false" placeholder="加载中..."></textarea>
+      <div id="editorStatus" class="editor-status"></div>
+    </div>
   </div>
 </div>
 
 <!-- Shortcuts modal -->
 <div id="shortcutsModal" class="modal-overlay hidden" onclick="if(event.target===this)toggleShortcuts()">
   <div class="modal">
-    <div class="modal-header"><span>⌨️ 快捷键</span><button class="btn btn-ghost btn-sm" onclick="toggleShortcuts()">✕</button></div>
+    <div class="modal-header"><span><span data-icon="keyboard"></span>快捷键</span><button class="btn btn-ghost btn-sm" onclick="toggleShortcuts()">✕</button></div>
     <div class="modal-body shortcuts-list">
       <div><kbd>Ctrl</kbd>+<kbd>Enter</kbd> 连接</div>
       <div><kbd>Ctrl</kbd>+<kbd>D</kbd> 断开</div>
@@ -61,44 +81,60 @@
   </div>
 </div>
 
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebarDrawer()"></div>
 <div class="main">
   <div class="sidebar" id="sidebar">
-    <div class="sidebar-tabs">
-      <div class="sidebar-tab active" data-tab="connect" onclick="switchTab('connect')">连接</div>
-      <div class="sidebar-tab" data-tab="saved" onclick="switchTab('saved')">已保存</div>
-      <div class="sidebar-tab" data-tab="snippets" onclick="switchTab('snippets')">片段</div>
-      <div class="sidebar-tab" data-tab="server" onclick="switchTab('server')">服务器</div>
-      <div class="sidebar-tab" data-tab="log" onclick="switchTab('log')">记录</div>
-    </div>
+    <nav class="sidebar-nav" aria-label="侧栏">
+      <button type="button" class="sidebar-tab active" data-tab="connect" onclick="switchTab('connect')">
+        <span data-icon="link"></span><span>连接</span>
+      </button>
+      <button type="button" class="sidebar-tab" data-tab="saved" onclick="switchTab('saved')">
+        <span data-icon="bookmark"></span><span>已保存</span>
+      </button>
+      <button type="button" class="sidebar-tab" data-tab="snippets" onclick="switchTab('snippets')">
+        <span data-icon="snippet"></span><span>片段</span>
+      </button>
+      <button type="button" class="sidebar-tab" data-tab="ai" onclick="switchTab('ai')">
+        <span data-icon="spark"></span><span>AI</span>
+      </button>
+      <button type="button" class="sidebar-tab" data-tab="server" onclick="switchTab('server')">
+        <span data-icon="server"></span><span>服务器</span>
+      </button>
+      <button type="button" class="sidebar-tab" data-tab="log" onclick="switchTab('log')">
+        <span data-icon="list"></span><span>记录</span>
+      </button>
+    </nav>
     <div class="sidebar-content">
-      <div id="tab-connect">
-        <div class="form-row">
-          <div class="form-group"><label>主机地址</label><input type="text" id="host" placeholder="192.168.1.100" /></div>
-          <div class="form-group form-group-sm"><label>端口</label><input type="number" id="port" value="22" /></div>
-        </div>
-        <div class="form-group"><label>用户名</label><input type="text" id="username" placeholder="root" /></div>
-        <div class="auth-tabs">
-          <div class="auth-tab active" data-auth="password" onclick="switchAuth('password')">密码</div>
-          <div class="auth-tab" data-auth="key" onclick="switchAuth('key')">密钥</div>
-        </div>
-        <div id="auth-password"><div class="form-group"><label>密码</label><input type="password" id="password" placeholder="••••••••" /></div></div>
-        <div id="auth-key" class="hidden">
-          <div class="form-group"><label>私钥 (PEM)</label><textarea id="privateKey" placeholder="-----BEGIN RSA PRIVATE KEY-----"></textarea></div>
-          <div class="form-group"><label>密钥口令 (可选)</label><input type="password" id="passphrase" placeholder="加密私钥的口令" /></div>
-        </div>
-        <details class="proxy-details">
-          <summary>代理设置 (可选)</summary>
-          <div class="form-group"><label>代理类型</label><select id="proxyType"><option value="">无</option><option value="http">HTTP</option><option value="socks5">SOCKS5</option></select></div>
+      <div id="tab-connect" class="tab-connect">
+        <div class="tab-connect-body">
           <div class="form-row">
-            <div class="form-group"><label>代理主机</label><input type="text" id="proxyHost" placeholder="127.0.0.1" /></div>
-            <div class="form-group form-group-sm"><label>端口</label><input type="number" id="proxyPort" placeholder="1080" /></div>
+            <div class="form-group"><label>主机地址</label><input type="text" id="host" placeholder="192.168.1.100" /></div>
+            <div class="form-group form-group-sm"><label>端口</label><input type="number" id="port" value="22" /></div>
           </div>
-        </details>
+          <div class="form-group"><label>用户名</label><input type="text" id="username" placeholder="root" /></div>
+          <div class="auth-tabs">
+            <div class="auth-tab active" data-auth="password" onclick="switchAuth('password')">密码</div>
+            <div class="auth-tab" data-auth="key" onclick="switchAuth('key')">密钥</div>
+          </div>
+          <div id="auth-password"><div class="form-group"><label>密码</label><input type="password" id="password" placeholder="••••••••" /></div></div>
+          <div id="auth-key" class="hidden">
+            <div class="form-group"><label>私钥 (PEM)</label><textarea id="privateKey" placeholder="-----BEGIN RSA PRIVATE KEY-----"></textarea></div>
+            <div class="form-group"><label>密钥口令 (可选)</label><input type="password" id="passphrase" placeholder="加密私钥的口令" /></div>
+          </div>
+          <details class="proxy-details">
+            <summary>代理设置 (可选)</summary>
+            <div class="form-group"><label>代理类型</label><select id="proxyType"><option value="">无</option><option value="http">HTTP</option><option value="socks5">SOCKS5</option></select></div>
+            <div class="form-row">
+              <div class="form-group"><label>代理主机</label><input type="text" id="proxyHost" placeholder="127.0.0.1" /></div>
+              <div class="form-group form-group-sm"><label>端口</label><input type="number" id="proxyPort" placeholder="1080" /></div>
+            </div>
+          </details>
+          <div id="recentList" class="recent-list"></div>
+        </div>
         <div class="form-actions">
           <button class="btn btn-primary" id="btnConnect" onclick="connect()">连接</button>
           <button class="btn btn-ghost" onclick="saveConnection()">保存</button>
         </div>
-        <div id="recentList" class="recent-list"></div>
       </div>
 
       <div id="tab-saved" class="hidden">
@@ -107,7 +143,7 @@
           <button class="btn btn-ghost btn-sm" onclick="importConnections()">导入</button>
         </div>
         <div id="savedList"></div>
-        <div id="savedEmpty" class="fp-empty"><div class="empty-icon">📂</div><div>暂无保存的连接</div></div>
+        <div id="savedEmpty" class="fp-empty"><div class="empty-icon" data-icon="folder"></div><div>暂无保存的连接</div></div>
       </div>
 
       <div id="tab-snippets" class="hidden">
@@ -118,11 +154,56 @@
         <div id="snippetList" class="snippet-list"></div>
       </div>
 
+      <div id="tab-ai" class="hidden">
+        <div class="ai-panel">
+          <div class="form-group">
+            <label>自然语言 / 问题</label>
+            <textarea id="aiPrompt" rows="3" placeholder="例如：查看磁盘占用最大的目录"></textarea>
+          </div>
+          <div class="ai-actions">
+            <button class="btn btn-primary btn-sm" onclick="aiGenerateCommands()">生成命令</button>
+            <button class="btn btn-ghost btn-sm" onclick="aiExplainSelection()">解释选中</button>
+          </div>
+          <div id="aiStatus" class="ai-status"></div>
+          <div id="aiResults" class="ai-results"></div>
+          <details class="ai-settings" id="aiSettingsDetails">
+            <summary>模型设置</summary>
+            <div class="form-group">
+              <label>预设</label>
+              <select id="aiPreset" onchange="onAiPresetChange()">
+                <option value="ollama">Ollama（本地）</option>
+                <option value="openai">OpenAI</option>
+                <option value="deepseek">DeepSeek</option>
+                <option value="qwen">通义千问</option>
+                <option value="custom">自定义</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Base URL</label>
+              <input type="text" id="aiBaseUrl" placeholder="http://127.0.0.1:11434/v1" />
+            </div>
+            <div class="form-group">
+              <label>模型名</label>
+              <input type="text" id="aiModel" placeholder="llama3.2" />
+            </div>
+            <div class="form-group">
+              <label>API Key（Ollama 可留空）</label>
+              <input type="password" id="aiApiKey" placeholder="sk-..." autocomplete="off" />
+            </div>
+            <div class="ai-settings-actions">
+              <button class="btn btn-ghost btn-sm" onclick="saveAiSettings()">保存设置</button>
+              <button class="btn btn-ghost btn-sm" onclick="loadAiModels()">拉取模型列表</button>
+            </div>
+            <div id="aiModelsHint" class="ai-models-hint"></div>
+          </details>
+        </div>
+      </div>
+
       <div id="tab-server" class="hidden">
         <div class="server-panel">
           <button class="btn btn-ghost btn-sm" onclick="refreshServerInfo()">↻ 刷新</button>
           <div id="serverInfo" class="server-info">
-            <div class="fp-empty"><div class="empty-icon">🖥️</div><div>连接后查看服务器信息</div></div>
+            <div class="fp-empty"><div class="empty-icon" data-icon="server"></div><div>连接后查看服务器信息</div></div>
           </div>
         </div>
       </div>
@@ -138,7 +219,13 @@
     </div>
   </div>
 
+  <div class="split-handle" id="splitSidebar" data-split="sidebar" title="拖动调整宽度"></div>
+
   <div class="terminal-area" id="terminalArea">
+    <div class="session-tabs" id="sessionTabs">
+      <div class="session-tabs-list" id="sessionTabsList"></div>
+      <button class="btn btn-ghost btn-sm session-tab-add" onclick="newSessionTab()" title="新建会话">+</button>
+    </div>
     <div class="terminal-toolbar">
       <div class="conn-info" id="connInfo">未连接</div>
       <div class="term-search hidden" id="termSearchBar">
@@ -147,20 +234,25 @@
         <button class="btn btn-ghost btn-sm" onclick="findNext()">↓</button>
         <button class="btn btn-ghost btn-sm" onclick="closeTermSearch()">✕</button>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="adjustFontSize(-1)" title="缩小字体">A-</button>
-      <button class="btn btn-ghost btn-sm" onclick="adjustFontSize(1)" title="放大字体">A+</button>
-      <button class="btn btn-ghost btn-sm" onclick="toggleTermSearch()" title="搜索 Ctrl+F">🔍</button>
-      <button class="btn btn-ghost btn-sm" onclick="copyTerminalSelection()" title="复制选中">📋</button>
-      <button class="btn btn-ghost btn-sm" onclick="clearTerminal()">清屏</button>
-      <button class="btn btn-ghost btn-sm" onclick="toggleFullscreen()" title="全屏 F11">⛶</button>
+      <button class="btn btn-ghost btn-sm btn-icon-only" onclick="toggleTermSearch()" title="搜索 Ctrl+F"><span data-icon="search"></span></button>
+      <button class="btn btn-ghost btn-sm btn-icon-only" id="termMoreBtn" onclick="toggleTermMore(event)" title="更多"><span data-icon="more"></span></button>
       <button class="btn btn-danger btn-sm hidden" id="btnDisconnect" onclick="disconnect()">断开</button>
+      <div id="termMoreMenu" class="ctx-menu term-more-menu hidden">
+        <div class="ctx-item" onclick="adjustFontSize(-1); hideTermMore()">缩小字体 A-</div>
+        <div class="ctx-item" onclick="adjustFontSize(1); hideTermMore()">放大字体 A+</div>
+        <div class="ctx-item" onclick="copyTerminalSelection(); hideTermMore()"><span data-icon="copy"></span>复制选中</div>
+        <div class="ctx-item" onclick="clearTerminal(); hideTermMore()">清屏</div>
+        <div class="ctx-item" onclick="toggleFullscreen(); hideTermMore()">全屏 F11</div>
+      </div>
     </div>
-    <div id="terminal"></div>
+    <div id="terminalHost" class="terminal-host"></div>
   </div>
 
-  <div class="file-panel" id="filePanel">
+  <div class="split-handle hidden" id="splitFiles" data-split="files" title="拖动调整宽度"></div>
+
+  <div class="file-panel collapsed" id="filePanel">
     <div class="fp-header">
-      <span>📁 远程文件</span>
+      <span class="fp-title"><span data-icon="folder"></span>远程文件</span>
       <button class="btn btn-ghost btn-sm" onclick="toggleFilePanel()" title="隐藏面板">◀</button>
     </div>
     <div class="fp-breadcrumb" id="fpBreadcrumb"></div>
@@ -179,27 +271,27 @@
       <label class="fp-toggle" title="显示隐藏文件"><input type="checkbox" id="showHidden" onchange="renderFilteredFiles()" /> 隐藏</label>
     </div>
     <div class="fp-toolbar">
-      <button class="btn btn-ghost btn-sm" onclick="toggleUploadZone()">📤 上传</button>
-      <button class="btn btn-ghost btn-sm" onclick="createRemoteDir()">📂 新建</button>
-      <button class="btn btn-ghost btn-sm" onclick="createRemoteFile()">📝 新文件</button>
+      <button class="btn btn-ghost btn-sm" onclick="toggleUploadZone()"><span data-icon="upload"></span> 上传</button>
+      <button class="btn btn-ghost btn-sm" onclick="createRemoteDir()"><span data-icon="folderPlus"></span> 新建</button>
+      <button class="btn btn-ghost btn-sm" onclick="createRemoteFile()"><span data-icon="filePlus"></span> 新文件</button>
       <span id="fpStatus" class="fp-status"></span>
     </div>
     <div id="uploadZoneWrap" class="hidden">
       <div class="upload-zone" id="uploadZone">
-        <div class="upload-icon">📤</div>
+        <div class="upload-icon" data-icon="upload"></div>
         <div class="upload-text">拖拽或点击上传<br><span class="upload-target">→ <span id="uploadTargetPath">/home</span></span></div>
         <input type="file" id="fileInput" multiple />
       </div>
     </div>
     <div class="fp-file-list" id="fpFileList">
-      <div class="fp-empty"><div class="empty-icon">🔌</div><div>连接服务器后浏览文件</div></div>
+      <div class="fp-empty"><div class="empty-icon" data-icon="plug"></div><div>连接服务器后浏览文件</div></div>
     </div>
     <div class="fp-upload-section hidden" id="fpUploadSection">
       <div class="fp-upload-header"><span>传输队列</span><button class="btn btn-ghost btn-sm" onclick="clearUploaded()">清除已完成</button></div>
       <div class="fp-upload-list" id="fpUploadList"></div>
     </div>
   </div>
-  <button class="fp-show-btn hidden" id="fpShowBtn" onclick="toggleFilePanel()" title="显示文件面板">📁</button>
+  <button class="fp-show-btn" id="fpShowBtn" onclick="toggleFilePanel()" title="显示文件面板"><span data-icon="folder"></span></button>
 </div>
 <div id="ctxMenu" class="ctx-menu hidden"></div>
 <input type="file" id="importFile" accept="application/json,.json" class="hidden" />
